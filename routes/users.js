@@ -98,7 +98,7 @@ router.get('/get/count', async (req, res) => {
         })
     }
     res.send({
-        products_count: count_users
+        count_users: count_users
     })
 })
 
