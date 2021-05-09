@@ -24,10 +24,12 @@ app.use(errorHandler)
 const user_routes = require('./routes/users')
 const product_routes = require('./routes/products')
 const categories_routes = require('./routes/categories')
+const orders_routes = require('./routes/orders')
 
 app.use('/api/v1/users', user_routes)
 app.use('/api/v1/products', product_routes)
 app.use('/api/v1/categories', categories_routes)
+app.use('/api/v1/orders', orders_routes)
 
 mongoose.connect(process.env.CON, {
     useNewUrlParser: true,

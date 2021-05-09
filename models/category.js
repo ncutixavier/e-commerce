@@ -15,6 +15,10 @@ const categorySchema = mongoose.Schema({
     description: {
         type: String,
     },
+    dateCreated: {
+        type: Date,
+        default: Date.now()
+    },
 })
 
 categorySchema.virtual('id').get(function () {
