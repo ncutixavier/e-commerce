@@ -95,7 +95,7 @@ router.delete('/:id', (req, res) => {
         })
         .catch(err => {
             return res.status(400).json({
-                message: 'category not existed'
+                message: 'user not existed'
             })
         })
 })
