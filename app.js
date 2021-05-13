@@ -31,6 +31,8 @@ app.use('/api/v1/products', product_routes)
 app.use('/api/v1/categories', categories_routes)
 app.use('/api/v1/orders', orders_routes)
 
+app.use('/public/uploads', express.static(__dirname + '/public/uploads'))
+// app.use(express.static('public'));
 mongoose.connect(process.env.CON, {
     useNewUrlParser: true,
     useUnifiedTopology: true,

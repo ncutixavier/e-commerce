@@ -21,6 +21,10 @@ const productSchema = mongoose.Schema({
         type: String,
         default: ''
     },
+    image: {
+        type: String,
+        default: ''
+    },
     images: [{
         type: String
     }],
@@ -29,7 +33,7 @@ const productSchema = mongoose.Schema({
         default: ''
     },
     price: {
-        type: String,
+        type: Number,
         default: ''
     },
     category: {

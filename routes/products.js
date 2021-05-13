@@ -3,6 +3,30 @@ const { Product } = require('../models/product')
 const { Category } = require('../models/category')
 const mongoose = require('mongoose')
 const router = express.Router()
+const multer = require('multer')
+
+const FILE_TYPE_MAP = {
+    'image/png': 'png',
+    'image/jpg': 'jpg',
+    'image/jpeg': 'jpeg',
+}
+const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        const isValid = FILE_TYPE_MAP[file.mimetype];
+        let upload_error = new Error('Invalid image type')
+        if (isValid) {
+            upload_error = null
+        }
+        cb(upload_error, 'public/uploads')
+    },
+    filename: function (req, file, cb) {
+        const fileName = file.originalname.split(' ').join('_')
+        const extension = FILE_TYPE_MAP[file.mimetype]
+        cb(null, `${fileName}_${Date.now()}.${extension}`)
+    }
+})
+
+const uploadOptions = multer({ storage: storage })
 
 router.get('/', async (req, res) => {
     let filter = {}
@@ -28,15 +52,22 @@ router.get('/:id', async (req, res) => {
     res.status(200).send(product)
 })
 
-router.post('/', async (req, res) => {
+router.post('/', uploadOptions.single('image'), async (req, res) => {
     let cat = await Category.findById(req.body.category)
     if (!cat)
         return res.status(400).send('Invalid category')
+
+    let file = req.file
+    if (!file)
+        return res.status(400).send('Image is required!')
+
+    const file_name = req.file.filename
+    const base_path = `${req.protocol}://${req.get('host')}/public/uploads/`
     let product = new Product({
         name: req.body.name,
         description: req.body.description,
         richDescription: req.body.richDescription,
-        image: req.body.image,
+        image: `${base_path}${file_name}`,
         brand: req.body.brand,
         price: req.body.price,
         category: req.body.category,
@@ -51,7 +82,7 @@ router.post('/', async (req, res) => {
     res.send(product)
 })
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', uploadOptions.single('image'), async (req, res) => {
     if (!mongoose.isValidObjectId(req.params.id)) {
         return res.status(400).send('Product is no longer existed')
     }
@@ -59,12 +90,25 @@ router.put('/:id', async (req, res) => {
     if (!cat)
         return res.status(400).send('Invalid category')
 
-    let product = await Product.findByIdAndUpdate(
+    const product = await Product.findById(req.params.id)
+    if (!product) return res.status(404).send('Invalid product')
+
+    const file = req.file
+    let image_path
+    if (file) {
+        const file_name = req.file.filename
+        const base_path = `${req.protocol}://${req.get('host')}/public/uploads/`
+        image_path = `${base_path}${file_name}`
+    } else {
+        image_path = product.image
+    }
+
+    let updatedProduct = await Product.findByIdAndUpdate(
         req.params.id, {
         name: req.body.name,
         description: req.body.description,
         richDescription: req.body.richDescription,
-        image: req.body.image,
+        image: image_path,
         brand: req.body.brand,
         price: req.body.price,
         category: req.body.category,
@@ -74,10 +118,10 @@ router.put('/:id', async (req, res) => {
         isFeatured: req.body.isFeatured
     }, { new: true }
     )
-    if (!product)
+    if (!updatedProduct)
         return res.status(400).send('product cannot be updated')
 
-    res.send(product)
+    res.send(updatedProduct)
 })
 
 router.delete('/:id', (req, res) => {
@@ -121,6 +165,30 @@ router.get('/get/featured/:count', async (req, res) => {
         })
     }
     res.send(featured_product)
+})
+
+router.put('/gallery-images/:id', uploadOptions.array('images', 10), async (req, res) => {
+    if (!mongoose.isValidObjectId(req.params.id)) {
+        return res.status(400).send('Product is no longer existed')
+    }
+
+    const files = req.files
+    let images_path = []
+    const base_path = `${req.protocol}://${req.get('host')}/public/uploads/`
+
+    if (files) {
+        files.map(file => {
+            images_path.push(`${base_path}${file.filename}`)
+        })
+    }
+    let updatedProduct = await Product.findByIdAndUpdate(
+        req.params.id, {
+        images: images_path
+    }, { new: true })
+    if (!updatedProduct)
+        return res.status(400).send('product cannot be updated')
+
+    res.send(updatedProduct)
 })
 
 module.exports = router
